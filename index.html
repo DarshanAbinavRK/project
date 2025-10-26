@@ -1,7 +1,8 @@
+Dark
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8"
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Divya Hospital - Futuristic Healthcare</title>
     <!-- Add EmailJS SDK -->
@@ -553,30 +554,6 @@
             box-shadow: 0 0 20px var(--primary);
         }
         
-        /* Database Status Indicator */
-        .db-status {
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            background: var(--card-bg);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            border: 1px solid var(--glass);
-            backdrop-filter: blur(10px);
-            font-size: 0.8rem;
-            z-index: 999;
-        }
-        
-        .db-status.connected {
-            border-color: var(--success);
-            color: var(--success);
-        }
-        
-        .db-status.disconnected {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-        
         /* Responsive */
         @media (max-width: 768px) {
             .hero h1 { font-size: 2.5rem; }
@@ -586,17 +563,11 @@
             .appointment-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
             .appointment-details { grid-template-columns: 1fr; }
             .appointment-actions { flex-direction: column; }
-            .db-status { top: 70px; right: 10px; font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
     <div class="bg-animation"></div>
-    
-    <!-- Database Status Indicator -->
-    <div id="dbStatus" class="db-status disconnected">
-        🔴 Database: Disconnected
-    </div>
     
     <header>
         <div class="container nav-container">
@@ -769,9 +740,6 @@
         // Store appointments in localStorage
         let appointments = JSON.parse(localStorage.getItem('appointments')) || [];
 
-        // Database connection status
-        let isDatabaseConnected = false;
-
         // Generate appointment number
         function generateAppointmentNumber() {
             const now = new Date();
@@ -786,78 +754,6 @@
         function isValidEmail(email) {
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             return emailRegex.test(email);
-        }
-
-        // ✅ NEW: Save to MongoDB function
-        async function saveToMongoDB(appointmentData) {
-            try {
-                console.log('💾 Attempting to save to MongoDB...');
-                
-                const response = await fetch('/.netlify/functions/save-appointment', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(appointmentData)
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    console.log('✅ MongoDB save successful:', result);
-                    updateDatabaseStatus(true);
-                    return result;
-                } else {
-                    console.error('❌ MongoDB save failed:', result.error);
-                    updateDatabaseStatus(false);
-                    return { success: false, error: result.error };
-                }
-            } catch (error) {
-                console.error('❌ MongoDB connection failed:', error);
-                updateDatabaseStatus(false);
-                return { success: false, error: 'Network error - cannot reach database' };
-            }
-        }
-
-        // ✅ NEW: Update database status indicator
-        function updateDatabaseStatus(connected) {
-            isDatabaseConnected = connected;
-            const dbStatus = document.getElementById('dbStatus');
-            
-            if (connected) {
-                dbStatus.textContent = '🟢 Database: Connected';
-                dbStatus.className = 'db-status connected';
-            } else {
-                dbStatus.textContent = '🔴 Database: Disconnected';
-                dbStatus.className = 'db-status disconnected';
-            }
-        }
-
-        // ✅ NEW: Test MongoDB connection
-        async function testMongoDBConnection() {
-            console.log('🧪 Testing MongoDB connection...');
-            
-            const testData = {
-                patientName: 'Test Patient',
-                patientEmail: 'test@example.com',
-                patientPhone: '+91 0000000000',
-                doctor: 'Dr. Test - Testing',
-                appointmentDate: today,
-                appointmentTime: '10:00',
-                appointmentNumber: 'TEST123'
-            };
-            
-            const result = await saveToMongoDB(testData);
-            
-            if (result.success) {
-                console.log('✅ MongoDB test successful!');
-                alert('MongoDB connection test: SUCCESS!');
-            } else {
-                console.error('❌ MongoDB test failed:', result.error);
-                alert('MongoDB connection test: FAILED - ' + result.error);
-            }
-            
-            return result.success;
         }
 
         // FIXED: EmailJS function with correct template parameters
@@ -917,55 +813,37 @@
             }
         }
 
-        // ✅ NEW: Improved success message
-        function showSuccessMessage(appointmentData, emailSent, dbSuccess) {
-            const successHTML = `
-                <div style="
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    background: var(--card-bg);
-                    padding: 3rem;
-                    border-radius: 20px;
-                    border: 2px solid ${dbSuccess ? 'var(--primary)' : 'var(--accent)'};
-                    box-shadow: 0 0 50px ${dbSuccess ? 'rgba(0, 245, 255, 0.5)' : 'rgba(255, 42, 109, 0.5)'};
-                    backdrop-filter: blur(20px);
-                    z-index: 10000;
-                    text-align: center;
-                    max-width: 500px;
-                    width: 90%;
-                ">
-                    <div style="font-size: 3rem; margin-bottom: 1rem;">${dbSuccess ? '🚀' : '⚠️'}</div>
-                    <h3 style="color: ${dbSuccess ? 'var(--primary)' : 'var(--accent)'}; margin-bottom: 1rem;">
-                        ${dbSuccess ? 'APPOINTMENT CONFIRMED!' : 'APPOINTMENT BOOKED (Local)'}
-                    </h3>
-                    <p style="margin-bottom: 0.5rem;"><strong>Patient:</strong> ${appointmentData.patientName}</p>
-                    <p style="margin-bottom: 0.5rem;"><strong>Appointment #:</strong> ${appointmentData.appointmentNumber}</p>
-                    <p style="margin-bottom: 0.5rem;"><strong>Doctor:</strong> ${appointmentData.doctor}</p>
-                    
-                    ${!dbSuccess ? 
-                        '<p style="color: var(--accent); margin-bottom: 1rem;">⚠️ Using local storage (database unavailable)</p>' : 
-                        '<p style="color: var(--success); margin-bottom: 1rem;">✓ Saved to database</p>'
-                    }
-                    
-                    <p style="margin-bottom: 1rem; color: ${emailSent ? 'var(--success)' : 'var(--accent)'};">
-                        ${emailSent ? '✓ Confirmation email sent!' : '⚠ Email notification failed'}
-                    </p>
-                    
-                    <button onclick="this.parentElement.remove()" style="
-                        background: ${dbSuccess ? 'var(--primary)' : 'var(--accent)'};
-                        color: var(--dark);
-                        border: none;
-                        padding: 0.8rem 2rem;
-                        border-radius: 10px;
-                        cursor: pointer;
-                        font-weight: bold;
-                    ">OK</button>
-                </div>
-            `;
-            
-            document.body.insertAdjacentHTML('beforeend', successHTML);
+        // FIXED: Test function with correct parameters
+        async function testEmailJS() {
+            try {
+                console.log('🧪 Testing EmailJS connection...');
+                
+                const testParams = {
+                    email: 'divya3dd.s@gmail.com', // Using 'email' parameter
+                    patient_name: 'Test Patient',
+                    doctor_name: 'Dr. Test',
+                    appointment_date: '2024-01-01',
+                    appointment_time: '10:00 AM',
+                    appointment_number: 'TEST123',
+                    hospital_phone: '+91 9876543210',
+                    hospital_email: 'divya3dd.s@gmail.com',
+                    reason: 'Test appointment'
+                };
+                
+                const response = await emailjs.send(
+                    'service_ei5bi2r',
+                    'template_g90dcd5',
+                    testParams
+                );
+                
+                console.log('✅ Test email sent successfully!', response);
+                alert('Test email sent! Check your inbox.');
+                return true;
+            } catch (error) {
+                console.error('❌ Test email failed:', error);
+                alert('Test failed: ' + error.text);
+                return false;
+            }
         }
 
         // Function to display appointments
@@ -1112,7 +990,7 @@
             }
         }
 
-        // ✅ UPDATED: Handle form submission with MongoDB
+        // Handle form submission
         document.getElementById('appointmentForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -1147,44 +1025,65 @@
                     return;
                 }
                 
-                // ✅ NEW: Try to save to MongoDB first
-                const dbResult = await saveToMongoDB(appointmentData);
+                // Add to appointments array
+                appointments.push(appointmentData);
+                localStorage.setItem('appointments', JSON.stringify(appointments));
                 
-                if (dbResult.success) {
-                    // ✅ Success - add to local storage as backup
-                    appointments.push(appointmentData);
-                    localStorage.setItem('appointments', JSON.stringify(appointments));
-                    
-                    // Send email notification
-                    const emailSent = await sendAppointmentEmail(appointmentData);
-                    
-                    // Update display
-                    displayAppointments();
-                    
-                    // Show success message
-                    showSuccessMessage(appointmentData, emailSent, true);
-                    
-                } else {
-                    // ❌ MongoDB failed - use local storage only
-                    console.log('MongoDB failed, using local storage only');
-                    appointments.push(appointmentData);
-                    localStorage.setItem('appointments', JSON.stringify(appointments));
-                    
-                    // Send email notification
-                    const emailSent = await sendAppointmentEmail(appointmentData);
-                    
-                    // Update display
-                    displayAppointments();
-                    
-                    // Show success message but indicate database issue
-                    showSuccessMessage(appointmentData, emailSent, false);
-                }
+                // Send email notification
+                const emailSent = await sendAppointmentEmail(appointmentData);
+                
+                // Update display
+                displayAppointments();
+                
+                // Create success message with email status
+                const successHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        background: var(--card-bg);
+                        padding: 3rem;
+                        border-radius: 20px;
+                        border: 2px solid var(--primary);
+                        box-shadow: 0 0 50px rgba(0, 245, 255, 0.5);
+                        backdrop-filter: blur(20px);
+                        z-index: 10000;
+                        text-align: center;
+                        max-width: 450px;
+                        width: 90%;
+                    ">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🚀</div>
+                        <h3 style="color: var(--primary); margin-bottom: 1rem;">APPOINTMENT CONFIRMED!</h3>
+                        <p style="margin-bottom: 0.5rem;"><strong>Patient:</strong> ${appointmentData.patientName}</p>
+                        <p style="margin-bottom: 0.5rem;"><strong>Appointment #:</strong> ${appointmentData.appointmentNumber}</p>
+                        <p style="margin-bottom: 0.5rem;"><strong>Doctor:</strong> ${appointmentData.doctor}</p>
+                        <p style="margin-bottom: 1rem; color: ${emailSent ? 'var(--success)' : 'var(--accent)'};">
+                            ${emailSent ? '✓ Confirmation email sent to patient!' : '⚠ Email notification failed - but appointment is booked'}
+                        </p>
+                        ${!emailSent ? '<p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 1rem;">Patient can still visit with appointment number</p>' : ''}
+                        <button onclick="this.parentElement.remove()" style="
+                            background: var(--primary);
+                            color: var(--dark);
+                            border: none;
+                            padding: 0.8rem 2rem;
+                            border-radius: 10px;
+                            cursor: pointer;
+                            font-weight: bold;
+                        ">OK</button>
+                    </div>
+                `;
+                
+                // Add success message to page
+                document.body.insertAdjacentHTML('beforeend', successHTML);
                 
                 // Reset form
                 this.reset();
+                
+                // Set minimum date again after reset
                 document.getElementById('appointmentDate').min = today;
                 
-                // Scroll to view appointments
+                // Scroll to view appointments section
                 setTimeout(() => {
                     document.getElementById('view-appointments').scrollIntoView({
                         behavior: 'smooth'
@@ -1218,18 +1117,11 @@
         // Initial display of appointments
         displayAppointments();
 
-        // Make test functions globally available
+        // Make test function globally available
         window.testEmailJS = testEmailJS;
-        window.testMongoDBConnection = testMongoDBConnection;
-
-        // Test database connection on load
-        setTimeout(() => {
-            testMongoDBConnection();
-        }, 2000);
 
         console.log('🚀 Divya Hospital system loaded successfully!');
         console.log('💡 You can test EmailJS by running: testEmailJS() in console');
-        console.log('💡 You can test MongoDB by running: testMongoDBConnection() in console');
     </script>
 </body>
 </html>
