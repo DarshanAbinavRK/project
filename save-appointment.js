@@ -3,7 +3,6 @@ const { MongoClient } = require('mongodb');
 const uri = process.env.MONGODB_URI;
 
 exports.handler = async (event, context) => {
-  // Only allow POST requests
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -14,19 +13,15 @@ exports.handler = async (event, context) => {
   try {
     const appointmentData = JSON.parse(event.body);
     
-    // Connect to MongoDB
     const client = new MongoClient(uri);
     await client.connect();
     
-    // Select database and collection
     const database = client.db('hospital_db');
     const collection = database.collection('appointments');
     
-    // Add timestamp and generate ID
+    // Add timestamp
     appointmentData.created_at = new Date();
-    appointmentData.appointment_id = `DH${Date.now()}${Math.random().toString(36).substr(2, 9)}`;
     
-    // Save to database
     const result = await collection.insertOne(appointmentData);
     await client.close();
     
@@ -39,7 +34,7 @@ exports.handler = async (event, context) => {
       },
       body: JSON.stringify({ 
         success: true, 
-        appointmentId: appointmentData.appointment_id,
+        appointmentId: appointmentData.appointmentNumber,
         insertedId: result.insertedId 
       })
     };
