@@ -1,0 +1,8 @@
+{
+  "name": "divya-hospital",
+  "version": "1.0.0",
+  "description": "Hospital appointment system",
+  "dependencies": {
+    "mongodb": "^4.0.0"
+  }
+}
